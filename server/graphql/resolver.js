@@ -272,4 +272,52 @@ module.exports = {
 
     return true;
   },
+  getUser: async function ({}, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      const error = new Error("No user found");
+      error.code = 404;
+      throw error;
+    }
+
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+      createdAt: user.createdAt ? user.createdAt.toISOString() : null,
+      updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
+    };
+  },
+  updateStatus: async function ({ status }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      const error = new Error("No user found");
+      error.code = 404;
+      throw error;
+    }
+
+    if (status.length < 7) {
+      const error = new Error("Status length too short");
+      error.code = 406;
+      throw error;
+    }
+
+    user.status = status;
+    await user.save();
+
+    return true;
+  },
 };

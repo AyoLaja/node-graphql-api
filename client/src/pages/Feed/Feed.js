@@ -22,19 +22,36 @@ class Feed extends Component {
   };
 
   componentDidMount() {
-    fetch("http://localhost:8080/auth/status", {
+    const statusQuery = {
+      query: `
+        query {
+          getUser {
+            status
+          } 
+        }
+      `,
+    };
+    fetch("http://localhost:8080/graphql", {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + this.props.token,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(statusQuery),
     })
       .then((res) => {
-        if (res.status !== 200) {
-          throw new Error("Failed to fetch user status.");
-        }
         return res.json();
       })
       .then((resData) => {
-        this.setState({ status: resData.status });
+        if (resData.errors && resData.errors[0].status === 422) {
+          throw new Error("Validation failed");
+        }
+
+        if (resData.errors) {
+          throw new Error("Fetch user failed");
+        }
+
+        this.setState({ status: resData.data.getUser.status });
       })
       .catch(this.catchError);
 
@@ -57,8 +74,8 @@ class Feed extends Component {
 
     const loadPostsQuery = {
       query: `
-        query {
-          getPosts(page: ${page}) {
+        query loadPostsQuery($page: Int!) {
+          getPosts(page: $page) {
             posts {
               _id
               title
@@ -73,6 +90,9 @@ class Feed extends Component {
           }
         }
       `,
+      variables: {
+        page,
+      },
     };
     fetch("http://localhost:8080/graphql", {
       method: "POST",
@@ -111,23 +131,36 @@ class Feed extends Component {
 
   statusUpdateHandler = (event) => {
     event.preventDefault();
-    fetch("http://localhost:8080/auth/status", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + this.props.token,
-      },
-      body: JSON.stringify({
+    const statusUpdateQuery = {
+      query: `
+        mutation UpdateStatusQuery($status: String!){
+          updateStatus(status: $status)
+        }
+      `,
+      variables: {
         status: this.state.status,
-      }),
+      },
+    };
+    fetch("http://localhost:8080/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + this.props.token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(statusUpdateQuery),
     })
       .then((res) => {
         if (res.status !== 200 && res.status !== 201) {
-          throw new Error("Can't update status!");
-        }
         return res.json();
       })
       .then((resData) => {
+        if (resData.errors && resData.errors[0].status === 422) {
+          throw new Error("Validation failed");
+        }
+
+        if (resData.errors) {
+          throw new Error("Update status failed");
+        }
         console.log(resData);
       })
       .catch(this.catchError);
@@ -175,39 +208,50 @@ class Feed extends Component {
         return res.json();
       })
       .then((resData) => {
-        const imageUrl = resData.filePath;
+        const imageUrl = resData.filePath || "undefined";
         let graphqlQuery = {};
         const { title, content } = postData;
 
         if (this.state.editPost) {
           graphqlQuery = {
             query: `
-            mutation {
-              updatePost(postId: "${this.state.editPost._id}", postInput: { title: "${title}", content: "${content}", imageUrl: "${imageUrl}" }) {
-                _id
-                title
-                content
-                imageUrl
-                creator { name }
-                createdAt
+              mutation updatePostQuery($postId: ID!, $title: String!, $content: String!, $imageUrl: String!) {
+                updatePost(postId: $postId, postInput: { title: $title, content: $content, imageUrl: $imageUrl }) {
+                  _id
+                  title
+                  content
+                  imageUrl
+                  creator { name }
+                  createdAt
+                }
               }
-            }
-          `,
+            `,
+            variables: {
+              postId: this.state.editPost._id,
+              title,
+              content,
+              imageUrl: imageUrl,
+            },
           };
         } else {
           graphqlQuery = {
             query: `
-            mutation {
-              createPost(postInput: { title: "${title}", content: "${content}", imageUrl: "${imageUrl}" }) {
-                _id
-                title
-                content
-                imageUrl
-                creator { name }
-                createdAt
+              mutation createPostQuery($title: String!, $content: String!, $imageUrl: String!) {
+                createPost(postInput: { title: $title, content: $content, imageUrl: $imageUrl }) {
+                  _id
+                  title
+                  content
+                  imageUrl
+                  creator { name }
+                  createdAt
+                }
               }
-            }
-          `,
+            `,
+            variables: {
+              title,
+              content,
+              imageUrl: imageUrl,
+            },
           };
         }
 
@@ -248,12 +292,14 @@ class Feed extends Component {
         };
         this.setState((prevState) => {
           let updatedPosts = [...prevState.posts];
+          let updatedTotalPosts = prevState.totalPosts;
           if (prevState.editPost) {
             const postIndex = prevState.posts.findIndex(
               (p) => p._id === prevState.editPost._id
             );
             updatedPosts[postIndex] = post;
           } else {
+            updatedTotalPosts++;
             if (prevState.posts.length >= 2) {
               updatedPosts.pop();
             }
@@ -264,6 +310,7 @@ class Feed extends Component {
             isEditing: false,
             editPost: null,
             editLoading: false,
+            totalPosts: updatedTotalPosts,
           };
         });
       })
@@ -286,10 +333,13 @@ class Feed extends Component {
     console.log(postId);
     const deletePostQuery = {
       query: `
-        mutation {
-          deletePost(postId: "${postId}")
+        mutation deletePostQuery($postId: ID!) {
+          deletePost(postId: $postId)
         }
       `,
+      variables: {
+        postId,
+      },
     };
 
     this.setState({ postsLoading: true });
