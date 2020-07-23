@@ -150,7 +150,6 @@ class Feed extends Component {
       body: JSON.stringify(statusUpdateQuery),
     })
       .then((res) => {
-        if (res.status !== 200 && res.status !== 201) {
         return res.json();
       })
       .then((resData) => {
