@@ -1,5 +1,4 @@
 const express = require("express");
-const fs = require("fs");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const path = require("path");
@@ -11,6 +10,7 @@ require("dotenv").config();
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolver");
 const auth = require("./middleware/is-auth");
+const { clearImage } = require("./utils/file");
 // Configuring where files get stored on multer
 const fileStorage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -133,10 +133,3 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
-
-const clearImage = (filePath) => {
-  filePath = path.join(__dirname, "..", filePath);
-
-  // Delete file by passing file path to it
-  fs.unlink(filePath, (err) => console.log(err));
-};
