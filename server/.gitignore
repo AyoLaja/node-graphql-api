@@ -3,3 +3,6 @@ node_modules
 
 # api credentials
 .env
+
+# logs
+access.log

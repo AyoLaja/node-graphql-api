@@ -8,6 +8,7 @@ const app = express();
 const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
+const https = require("https");
 const { graphqlHTTP } = require("express-graphql");
 require("dotenv").config();
 
@@ -15,6 +16,12 @@ const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolver");
 const auth = require("./middleware/is-auth");
 const { clearImage } = require("./utils/file");
+
+// Read private key
+// fs.readfileSync will block execution of code till the file is read
+const privateKey = fs.readFileSync("server.key");
+const certificate = fs.readFileSync("server.cert");
+
 // Configuring where files get stored on multer
 const fileStorage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -24,7 +31,6 @@ const fileStorage = multer.diskStorage({
     callback(null, new Date().toISOString() + "-" + file.originalname);
   },
 });
-// ddd
 const fileFilter = (req, file, callback) => {
   if (
     (file.mimeType =
@@ -145,6 +151,9 @@ mongoose
   .then(() => {
     const port = APPLICATION_PORT || 8080;
     app.listen(port);
+    // https
+    //   .createServer({ key: privateKey, cert: certificate }, app)
+    //   .listen(port);
     console.log(`listening at ${port}`);
   })
   .catch((err) => {
