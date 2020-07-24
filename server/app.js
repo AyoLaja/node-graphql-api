@@ -1,9 +1,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const fs = require("fs");
 const mongoose = require("mongoose");
 const path = require("path");
 const multer = require("multer");
 const app = express();
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
 const { graphqlHTTP } = require("express-graphql");
 require("dotenv").config();
 
@@ -31,6 +35,19 @@ const fileFilter = (req, file, callback) => {
     callback(null, true);
   }
 };
+
+// helmet adds headers to our response for security purposes
+app.use(helmet());
+
+// compression aids in compressing assets
+app.use(compression());
+
+// for request logging
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+app.use(morgan("combined", { stream: accessLogStream }));
 
 // Parses incoming JSON data. Type: application/json
 // app.use(bodyParser.urlencoded({ extended: false }));
