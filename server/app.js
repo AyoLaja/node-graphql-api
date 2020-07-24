@@ -19,8 +19,8 @@ const { clearImage } = require("./utils/file");
 
 // Read private key
 // fs.readfileSync will block execution of code till the file is read
-const privateKey = fs.readFileSync("server.key");
-const certificate = fs.readFileSync("server.cert");
+// const privateKey = fs.readFileSync("server.key");
+// const certificate = fs.readFileSync("server.cert");
 
 // Configuring where files get stored on multer
 const fileStorage = multer.diskStorage({
