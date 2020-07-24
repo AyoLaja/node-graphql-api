@@ -6,3 +6,7 @@ node_modules
 
 # logs
 access.log
+
+# SSL keys
+server.cert
+server.key

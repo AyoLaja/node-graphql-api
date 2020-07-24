@@ -141,11 +141,16 @@ const mongooseConfig = {
   useUnifiedTopology: true,
 };
 
-const { MONGODB_USERNAME, MONGODB_PASSWORD, APPLICATION_PORT } = process.env;
+const {
+  MONGODB_USERNAME,
+  MONGODB_PASSWORD,
+  MONGODB_DEFAULT_DATABASE,
+  APPLICATION_PORT,
+} = process.env;
 
 mongoose
   .connect(
-    `mongodb+srv://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@cluster0-wlgys.mongodb.net/messages?retryWrites=true&w=majority`,
+    `mongodb+srv://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@cluster0-wlgys.mongodb.net/${MONGODB_DEFAULT_DATABASE}?retryWrites=true&w=majority`,
     mongooseConfig
   )
   .then(() => {
